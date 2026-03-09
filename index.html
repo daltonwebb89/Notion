@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dalton's Notion Widgets</title>
+  <link href="https://fonts.googleapis.com/css2?family=Karla:wght@300;400&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #111110;
+      color: #f0ede8;
+      font-family: 'Karla', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    .wrap { max-width: 400px; width: 100%; }
+    h1 { font-size: 1.1rem; font-weight: 400; color: #55534e; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 1.5rem; }
+    a {
+      display: block;
+      padding: 0.75rem 1rem;
+      margin-bottom: 0.6rem;
+      border: 1px solid #2a2a28;
+      border-radius: 6px;
+      color: #f0ede8;
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    a:hover { border-color: #e8624a; background: #1a1a18; }
+    .sub { font-size: 0.72rem; color: #55534e; margin-top: 2px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Notion Widgets</h1>
+    <a href="dalton-greeting.html">
+      Good Morning, Dalton
+      <div class="sub">Time-based greeting widget</div>
+    </a>
+    <a href="pomodoro-horizontal.html">
+      Pomodoro Timer
+      <div class="sub">25 min focus · 5 min break</div>
+    </a>
+  </div>
+</body>
+</html>
