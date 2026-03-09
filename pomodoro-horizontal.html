@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pomodoro</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Karla:wght@300;400&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #111110;
+      --work: #e8624a;
+      --break: #4a9e8e;
+      --text: #f0ede8;
+      --muted: #55534e;
+      --accent: var(--work);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Karla', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 1rem;
+    }
+
+    .bar {
+      display: flex;
+      align-items: center;
+      gap: 1.4rem;
+      background: #1a1a18;
+      border: 1px solid #2a2a28;
+      border-radius: 8px;
+      padding: 0.75rem 1.4rem;
+      width: 100%;
+      max-width: 560px;
+      opacity: 0;
+      animation: fadeIn 0.5s ease 0.1s forwards;
+    }
+
+    /* Mode tabs */
+    .tabs {
+      display: flex;
+      gap: 0;
+      border: 1px solid #2a2a28;
+      border-radius: 4px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .tab {
+      padding: 0.35rem 0.7rem;
+      font-family: 'Karla', sans-serif;
+      font-size: 0.65rem;
+      font-weight: 400;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      background: transparent;
+      color: var(--muted);
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      white-space: nowrap;
+    }
+
+    .tab.active { background: var(--accent); color: #fff; }
+
+    /* Progress bar */
+    .progress-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .progress-track {
+      height: 4px;
+      background: #2a2a28;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 2px;
+      width: 100%;
+      transition: width 1s linear, background 0.4s ease;
+    }
+
+    .progress-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .mode-label {
+      font-size: 0.62rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* Time */
+    .time-display {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.9rem;
+      letter-spacing: 0.04em;
+      color: var(--text);
+      line-height: 1;
+      flex-shrink: 0;
+      min-width: 62px;
+      text-align: center;
+    }
+
+    /* Session dots */
+    .dots {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #2a2a28;
+      transition: background 0.3s;
+    }
+
+    .dot.done { background: var(--accent); }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+
+    .btn-main {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.15s, background 0.4s;
+      flex-shrink: 0;
+    }
+
+    .btn-main:hover { transform: scale(1.08); }
+    .btn-main:active { transform: scale(0.94); }
+
+    .btn-icon {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.2s;
+      border-radius: 50%;
+    }
+
+    .btn-icon:hover { color: var(--text); }
+
+    @keyframes fadeIn { to { opacity: 1; } }
+  </style>
+</head>
+<body>
+<div class="bar">
+
+  <!-- Mode tabs -->
+  <div class="tabs">
+    <button class="tab active" id="tabWork"  onclick="switchMode('work')">Focus</button>
+    <button class="tab"        id="tabBreak" onclick="switchMode('break')">Break</button>
+  </div>
+
+  <!-- Time -->
+  <div class="time-display" id="timeDisplay">25:00</div>
+
+  <!-- Progress + label -->
+  <div class="progress-wrap">
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="progress-meta">
+      <span class="mode-label" id="modeLabel">Focus Session</span>
+      <div class="dots">
+        <div class="dot" id="d0"></div>
+        <div class="dot" id="d1"></div>
+        <div class="dot" id="d2"></div>
+        <div class="dot" id="d3"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <button class="btn-icon" onclick="resetTimer()" title="Reset">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+        <path d="M3 3v5h5"/>
+      </svg>
+    </button>
+
+    <button class="btn-main" onclick="toggleTimer()">
+      <svg id="iconPlay" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+        <polygon points="5,3 19,12 5,21"/>
+      </svg>
+      <svg id="iconPause" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="display:none">
+        <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
+      </svg>
+    </button>
+
+    <button class="btn-icon" onclick="skipSession()" title="Skip">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="5,4 15,12 5,20"/><line x1="19" y1="5" x2="19" y2="19"/>
+      </svg>
+    </button>
+  </div>
+
+</div>
+
+<script>
+  const MODES = {
+    work:  { label: 'Focus Session', secs: 25 * 60, color: '#e8624a' },
+    break: { label: 'Short Break',   secs:  5 * 60, color: '#4a9e8e' }
+  };
+
+  let mode      = 'work';
+  let totalSecs = MODES.work.secs;
+  let remaining = totalSecs;
+  let running   = false;
+  let interval  = null;
+  let sessions  = 0;
+
+  const timeDisplay  = document.getElementById('timeDisplay');
+  const modeLabel    = document.getElementById('modeLabel');
+  const progressFill = document.getElementById('progressFill');
+  const iconPlay     = document.getElementById('iconPlay');
+  const iconPause    = document.getElementById('iconPause');
+
+  function setAccent(color) {
+    document.documentElement.style.setProperty('--accent', color);
+  }
+
+  function switchMode(m) {
+    pause();
+    mode      = m;
+    totalSecs = MODES[m].secs;
+    remaining = totalSecs;
+    setAccent(MODES[m].color);
+    modeLabel.textContent = MODES[m].label;
+    document.getElementById('tabWork').classList.toggle('active',  m === 'work');
+    document.getElementById('tabBreak').classList.toggle('active', m === 'break');
+    updateDisplay();
+  }
+
+  function updateDisplay() {
+    const m = String(Math.floor(remaining / 60)).padStart(2, '0');
+    const s = String(remaining % 60).padStart(2, '0');
+    timeDisplay.textContent = `${m}:${s}`;
+    progressFill.style.width = `${(remaining / totalSecs) * 100}%`;
+  }
+
+  function toggleTimer() { running ? pause() : start(); }
+
+  function start() {
+    running = true;
+    iconPlay.style.display  = 'none';
+    iconPause.style.display = 'block';
+    interval = setInterval(() => {
+      if (remaining <= 0) { clearInterval(interval); running = false; onComplete(); return; }
+      remaining--;
+      updateDisplay();
+    }, 1000);
+  }
+
+  function pause() {
+    running = false;
+    clearInterval(interval);
+    iconPlay.style.display  = 'block';
+    iconPause.style.display = 'none';
+  }
+
+  function resetTimer() { pause(); remaining = totalSecs; updateDisplay(); }
+
+  function skipSession() { pause(); onComplete(); }
+
+  function onComplete() {
+    iconPlay.style.display  = 'block';
+    iconPause.style.display = 'none';
+    if (mode === 'work') {
+      sessions = Math.min(sessions + 1, 4);
+      updateDots();
+      notify('Focus session complete! Take a break.');
+      switchMode('break');
+    } else {
+      notify('Break over! Time to focus.');
+      switchMode('work');
+    }
+  }
+
+  function updateDots() {
+    for (let i = 0; i < 4; i++) {
+      document.getElementById(`d${i}`).classList.toggle('done', i < sessions);
+    }
+    if (sessions >= 4) sessions = 0;
+  }
+
+  function notify(msg) {
+    if (Notification.permission === 'granted') {
+      new Notification('Pomodoro', { body: msg });
+    } else if (Notification.permission !== 'denied') {
+      Notification.requestPermission().then(p => {
+        if (p === 'granted') new Notification('Pomodoro', { body: msg });
+      });
+    }
+  }
+
+  updateDisplay();
+</script>
+</body>
+</html>
