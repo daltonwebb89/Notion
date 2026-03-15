@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Deadline Timer</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ── TOKENS ── */
+  :root {
+    --bg-page:       #0f1623;
+    --bg-card:       #1a2235;
+    --bg-card-panel: #141c2e;
+    --bg-input:      #0f1623;
+    --border:        rgba(255,255,255,0.10);
+    --border-strong: rgba(255,255,255,0.18);
+    --text-primary:  #e8edf5;
+    --text-secondary:#8a9ab8;
+    --text-hint:     #56657f;
+    --accent:        #4f7ef8;
+    --accent-dim:    rgba(79,126,248,0.15);
+    --bar-ok:        #4f7ef8;
+    --bar-warn:      #d4860a;
+    --bar-danger:    #c03030;
+    --badge-active-bg:  rgba(79,126,248,0.18);
+    --badge-active-txt: #7aacff;
+    --badge-over-bg:    rgba(192,48,48,0.20);
+    --badge-over-txt:   #f08080;
+    --badge-done-bg:    rgba(34,180,100,0.15);
+    --badge-done-txt:   #5ddb8e;
+    --radius-card: 12px;
+    --radius-sm:    6px;
+  }
+
+  body {
+    background: var(--bg-page);
+    font-family: system-ui, -apple-system, sans-serif;
+    padding: 1.25rem;
+    min-height: 100vh;
+  }
+
+  /* ── PAGE HEADER ── */
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .page-title {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .add-btn {
+    background: var(--accent-dim);
+    border: 0.5px solid var(--accent);
+    border-radius: var(--radius-sm);
+    padding: 5px 14px;
+    font-size: 12px;
+    color: var(--accent);
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .add-btn:hover { background: rgba(79,126,248,0.28); }
+
+  /* ── TIMER LIST ── */
+  #timer-list {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 14px;
+    align-items: flex-start;
+  }
+
+  /* ── CARD ── */
+  .timer-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    padding: 1.1rem 1.25rem 0.9rem;
+    transition: border-color 0.3s;
+    flex: 1 1 260px;
+    min-width: 240px;
+    max-width: 340px;
+  }
+  .timer-card.urgent { border-color: #c03030; }
+
+  /* header row */
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .card-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .card-title {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  /* status badge */
+  .badge {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 9px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+  .badge-active   { background: var(--badge-active-bg); color: var(--badge-active-txt); }
+  .badge-overdue  { background: var(--badge-over-bg);   color: var(--badge-over-txt);   }
+  .badge-complete { background: var(--badge-done-bg);   color: var(--badge-done-txt);   }
+  .badge-upcoming { background: rgba(255,255,255,0.07); color: var(--text-secondary);   }
+
+  /* countdown */
+  .timer-display {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+  }
+  .timer-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .timer-num {
+    font-size: 26px;
+    font-weight: 500;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+    min-width: 2ch;
+    text-align: center;
+    line-height: 1.1;
+  }
+  .timer-lbl {
+    font-size: 10px;
+    color: var(--text-hint);
+    text-transform: lowercase;
+    letter-spacing: 0.04em;
+  }
+  .timer-sep {
+    font-size: 22px;
+    color: var(--text-hint);
+    margin: 0 2px;
+    align-self: flex-start;
+    padding-top: 1px;
+  }
+  .timer-expired {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--bar-danger);
+  }
+
+  /* progress */
+  .progress-wrap {
+    margin-top: 0.75rem;
+    background: rgba(255,255,255,0.06);
+    border-radius: 3px;
+    height: 3px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: var(--bar-ok);
+    transition: width 1s linear, background 0.5s;
+  }
+  .progress-fill.warn   { background: var(--bar-warn); }
+  .progress-fill.danger { background: var(--bar-danger); }
+
+  .meta-row {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 5px;
+  }
+  .meta-txt { font-size: 10px; color: var(--text-hint); }
+
+  /* toggle + edit panel */
+  .toggle-row {
+    margin-top: 0.85rem;
+    border-top: 0.5px solid var(--border);
+    padding-top: 0.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .toggle-btn {
+    background: none;
+    border: 0.5px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    padding: 3px 10px;
+    font-size: 11px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .toggle-btn:hover { background: rgba(255,255,255,0.05); }
+
+  .remove-btn {
+    background: none;
+    border: none;
+    color: var(--text-hint);
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+  }
+  .remove-btn:hover { color: var(--bar-danger); background: rgba(192,48,48,0.12); }
+
+  .arrow {
+    display: inline-block;
+    transition: transform 0.2s;
+    font-size: 9px;
+  }
+  .arrow.open { transform: rotate(90deg); }
+
+  .edit-panel {
+    display: none;
+    flex-direction: column;
+    gap: 9px;
+    margin-top: 0.65rem;
+    background: var(--bg-card-panel);
+    border-radius: var(--radius-sm);
+    padding: 0.75rem 1rem;
+  }
+  .edit-panel.visible { display: flex; }
+
+  .field-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .field-lbl {
+    font-size: 11px;
+    color: var(--text-secondary);
+    min-width: 68px;
+  }
+  .field-input {
+    flex: 1;
+    min-width: 130px;
+    font-size: 12px;
+    padding: 5px 8px;
+    border: 0.5px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--bg-input);
+    color: var(--text-primary);
+    font-family: inherit;
+  }
+  .field-input:focus { outline: none; border-color: var(--accent); }
+
+  .apply-btn {
+    align-self: flex-end;
+    background: var(--accent-dim);
+    border: 0.5px solid var(--accent);
+    border-radius: var(--radius-sm);
+    padding: 5px 14px;
+    font-size: 11px;
+    color: var(--accent);
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .apply-btn:hover { background: rgba(79,126,248,0.28); }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <span class="page-title">Deadlines</span>
+  <button class="add-btn" onclick="addTimer()">+ Add milestone</button>
+</div>
+
+<div id="timer-list"></div>
+
+<script>
+const STORAGE_KEY = 'deadline_timers_v2';
+
+const defaultTimers = [
+  { id: uid(), title: 'Project Submission Deadline', from: offsetDate(0),  due: offsetDate(30) },
+  { id: uid(), title: 'Design Review',               from: offsetDate(-5), due: offsetDate(10) },
+  { id: uid(), title: 'Client Handover',             from: offsetDate(0),  due: offsetDate(60) }
+];
+
+function uid() { return '_' + Math.random().toString(36).slice(2,9); }
+function offsetDate(days) {
+  const d = new Date(); d.setDate(d.getDate() + days);
+  return d.toISOString().split('T')[0];
+}
+function pad(n) { return String(n).padStart(2,'0'); }
+function fmtDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso + 'T00:00:00');
+  return d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
+}
+
+function loadTimers() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return defaultTimers.map(t => ({...t}));
+}
+
+function saveTimers(list) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch(e) {}
+}
+
+let timers = loadTimers();
+
+function render() {
+  const container = document.getElementById('timer-list');
+  container.innerHTML = '';
+  timers.forEach(t => container.appendChild(buildCard(t)));
+}
+
+function buildCard(t) {
+  const card = document.createElement('div');
+  card.className = 'timer-card';
+  card.id = 'card-' + t.id;
+
+  card.innerHTML = `
+    <div class="card-header">
+      <div class="card-left">
+        <span class="card-title" id="title-${t.id}">${t.title}</span>
+        <span class="badge" id="badge-${t.id}"></span>
+      </div>
+      <div class="timer-display" id="display-${t.id}"></div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-fill" id="fill-${t.id}" style="width:0%"></div>
+    </div>
+    <div class="meta-row">
+      <span class="meta-txt" id="meta-from-${t.id}"></span>
+      <span class="meta-txt" id="meta-pct-${t.id}"></span>
+    </div>
+    <div class="toggle-row">
+      <button class="toggle-btn" onclick="togglePanel('${t.id}')">
+        <span class="arrow" id="arrow-${t.id}">▶</span> Customise
+      </button>
+      <button class="remove-btn" title="Remove" onclick="removeTimer('${t.id}')">×</button>
+    </div>
+    <div class="edit-panel" id="panel-${t.id}">
+      <div class="field-row">
+        <span class="field-lbl">Title</span>
+        <input class="field-input" id="inp-title-${t.id}" type="text" value="${t.title}" />
+      </div>
+      <div class="field-row">
+        <span class="field-lbl">Date from</span>
+        <input class="field-input" id="inp-from-${t.id}" type="date" value="${t.from || ''}" />
+      </div>
+      <div class="field-row">
+        <span class="field-lbl">Date due</span>
+        <input class="field-input" id="inp-due-${t.id}" type="date" value="${t.due || ''}" />
+      </div>
+      <button class="apply-btn" onclick="applyTimer('${t.id}')">Apply</button>
+    </div>
+  `;
+  return card;
+}
+
+function togglePanel(id) {
+  const panel = document.getElementById('panel-' + id);
+  const arrow = document.getElementById('arrow-' + id);
+  const open  = panel.classList.toggle('visible');
+  arrow.classList.toggle('open', open);
+}
+
+function applyTimer(id) {
+  const t = timers.find(x => x.id === id);
+  if (!t) return;
+  t.title = document.getElementById('inp-title-' + id).value.trim() || t.title;
+  t.from  = document.getElementById('inp-from-'  + id).value || t.from;
+  t.due   = document.getElementById('inp-due-'   + id).value || t.due;
+  document.getElementById('title-' + id).textContent = t.title;
+  saveTimers(timers);
+  tickCard(t);
+}
+
+function addTimer() {
+  const t = { id: uid(), title: 'New Deadline', from: offsetDate(0), due: offsetDate(14) };
+  timers.push(t);
+  saveTimers(timers);
+  const container = document.getElementById('timer-list');
+  container.appendChild(buildCard(t));
+  tickCard(t);
+  togglePanel(t.id);
+}
+
+function removeTimer(id) {
+  timers = timers.filter(t => t.id !== id);
+  saveTimers(timers);
+  const el = document.getElementById('card-' + id);
+  if (el) el.remove();
+}
+
+function tickCard(t) {
+  const display  = document.getElementById('display-'   + t.id);
+  const fill     = document.getElementById('fill-'      + t.id);
+  const metaFrom = document.getElementById('meta-from-' + t.id);
+  const metaPct  = document.getElementById('meta-pct-'  + t.id);
+  const badge    = document.getElementById('badge-'     + t.id);
+  const card     = document.getElementById('card-'      + t.id);
+  if (!display) return;
+
+  const now  = new Date();
+  const due  = t.due  ? new Date(t.due  + 'T23:59:59') : null;
+  const from = t.from ? new Date(t.from + 'T00:00:00') : null;
+
+  if (!due) {
+    display.innerHTML = '<span class="timer-expired">Set a due date</span>';
+    return;
+  }
+
+  const diff = due - now;
+
+  // progress bar
+  if (from && due) {
+    const total   = due - from;
+    const elapsed = now - from;
+    const pct = Math.min(100, Math.max(0, (elapsed / total) * 100));
+    fill.style.width = pct.toFixed(1) + '%';
+    fill.className = 'progress-fill' + (pct >= 90 ? ' danger' : pct >= 70 ? ' warn' : '');
+    metaFrom.textContent = 'From ' + fmtDate(t.from);
+    metaPct.textContent  = Math.round(pct) + '% elapsed';
+  }
+
+  // urgency border
+  const daysLeft = diff / (1000 * 60 * 60 * 24);
+  card.classList.toggle('urgent', diff > 0 && daysLeft < 7);
+
+  // status badge + countdown
+  if (diff <= 0) {
+    badge.textContent = 'Overdue';
+    badge.className   = 'badge badge-overdue';
+    display.innerHTML = '<span class="timer-expired">Deadline passed</span>';
+    fill.style.width  = '100%';
+    fill.className    = 'progress-fill danger';
+  } else if (from && now < from) {
+    badge.textContent = 'Upcoming';
+    badge.className   = 'badge badge-upcoming';
+    showCountdown(display, diff);
+  } else {
+    badge.textContent = 'In Progress';
+    badge.className   = 'badge badge-active';
+    showCountdown(display, diff);
+  }
+}
+
+function showCountdown(el, diff) {
+  const totalHours = Math.floor(diff / (1000 * 60 * 60));
+  const days  = Math.floor(totalHours / 24);
+  const hours = totalHours % 24;
+  el.innerHTML =
+    `<div class="timer-block"><span class="timer-num">${days}</span><span class="timer-lbl">days</span></div>` +
+    `<span class="timer-sep">:</span>` +
+    `<div class="timer-block"><span class="timer-num">${pad(hours)}</span><span class="timer-lbl">hours</span></div>`;
+}
+
+function tickAll() { timers.forEach(t => tickCard(t)); }
+
+render();
+tickAll();
+setInterval(tickAll, 60000);
+</script>
+</body>
+</html>
