@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Rotating Quotes</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-page:       #0f1623;
+    --bg-card:       #1a2235;
+    --bg-card-panel: #141c2e;
+    --bg-input:      #0f1623;
+    --border:        rgba(255,255,255,0.10);
+    --border-strong: rgba(255,255,255,0.18);
+    --text-primary:  #e8edf5;
+    --text-secondary:#8a9ab8;
+    --text-hint:     #56657f;
+    --accent:        #4f7ef8;
+    --accent-dim:    rgba(79,126,248,0.15);
+    --radius-card:   12px;
+    --radius-sm:     6px;
+  }
+
+  body {
+    background: var(--bg-page);
+    font-family: system-ui, -apple-system, sans-serif;
+    padding: 1.25rem;
+    min-height: 100vh;
+  }
+
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .page-title {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .quote-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    padding: 1.1rem 1.25rem 0.9rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .quote-display {
+    min-height: 90px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .quote-text {
+    font-size: 17px;
+    font-weight: 400;
+    color: var(--text-primary);
+    line-height: 1.65;
+    font-style: italic;
+  }
+
+  .quote-attr {
+    font-size: 12px;
+    color: var(--text-hint);
+    letter-spacing: 0.03em;
+  }
+
+  .dots-row {
+    display: flex;
+    gap: 5px;
+    margin-top: 0.85rem;
+  }
+
+  .dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--border-strong);
+    transition: background 0.3s;
+  }
+  .dot.active { background: var(--accent); }
+
+  .interval-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 0.85rem;
+    padding-top: 0.7rem;
+    border-top: 0.5px solid var(--border);
+  }
+
+  .interval-lbl {
+    font-size: 11px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+
+  input[type=range] {
+    flex: 1;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
+  .interval-val {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-primary);
+    min-width: 28px;
+  }
+
+  .section-lbl {
+    font-size: 11px;
+    color: var(--text-hint);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 10px;
+  }
+
+  .quote-item {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    padding: 0.85rem 1rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .quote-item-body { flex: 1; }
+  .qi-text { font-size: 13px; color: var(--text-primary); line-height: 1.5; font-style: italic; }
+  .qi-attr { font-size: 11px; color: var(--text-hint); margin-top: 3px; }
+
+  .remove-btn {
+    background: none;
+    border: none;
+    color: var(--text-hint);
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 2px 5px;
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+  }
+  .remove-btn:hover { color: #c03030; background: rgba(192,48,48,0.12); }
+
+  .add-form {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    padding: 0.9rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    margin-top: 1.25rem;
+  }
+
+  .field-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .field-lbl {
+    font-size: 11px;
+    color: var(--text-secondary);
+    min-width: 72px;
+  }
+
+  .field-input {
+    flex: 1;
+    min-width: 130px;
+    font-size: 12px;
+    padding: 5px 8px;
+    border: 0.5px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--bg-input);
+    color: var(--text-primary);
+    font-family: inherit;
+  }
+  .field-input:focus { outline: none; border-color: var(--accent); }
+
+  textarea.field-input {
+    resize: vertical;
+    min-height: 58px;
+    line-height: 1.5;
+  }
+
+  .apply-btn {
+    align-self: flex-end;
+    background: var(--accent-dim);
+    border: 0.5px solid var(--accent);
+    border-radius: var(--radius-sm);
+    padding: 5px 14px;
+    font-size: 11px;
+    color: var(--accent);
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .apply-btn:hover { background: rgba(79,126,248,0.28); }
+
+  .empty-msg {
+    font-size: 13px;
+    color: var(--text-hint);
+    text-align: center;
+    padding: 1.5rem 0;
+  }
+
+  .tab-row {
+    display: flex;
+    border-bottom: 0.5px solid var(--border);
+    margin-bottom: 1.25rem;
+  }
+
+  .tab {
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 7px 16px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: 0.02em;
+  }
+  .tab.active {
+    color: var(--text-primary);
+    border-bottom-color: var(--accent);
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <span class="page-title">Quotes</span>
+</div>
+
+<div class="tab-row">
+  <button class="tab active" onclick="switchTab('display')">Display</button>
+  <button class="tab" onclick="switchTab('edit')">Edit quotes</button>
+</div>
+
+<div id="display-view">
+  <div class="quote-card">
+    <div class="quote-display">
+      <div class="quote-text" id="qt">Loading...</div>
+      <div class="quote-attr" id="qa"></div>
+    </div>
+    <div class="dots-row" id="dots"></div>
+    <div class="interval-row">
+      <span class="interval-lbl">Interval</span>
+      <input type="range" min="3" max="30" step="1" id="interval-slider" oninput="updateInterval(this.value)" />
+      <span class="interval-val" id="interval-val">8s</span>
+    </div>
+  </div>
+</div>
+
+<div id="edit-view" style="display:none;">
+  <p class="section-lbl">Current quotes</p>
+  <div id="quote-list"></div>
+  <div class="add-form">
+    <p class="section-lbl" style="margin-bottom:0;">Add a quote</p>
+    <div class="field-row">
+      <span class="field-lbl">Quote</span>
+      <textarea class="field-input" id="new-quote" placeholder="Enter quote text..."></textarea>
+    </div>
+    <div class="field-row">
+      <span class="field-lbl">Attribution</span>
+      <input class="field-input" type="text" id="new-attr" placeholder="— Author (optional)" />
+    </div>
+    <button class="apply-btn" onclick="addQuote()">Add quote</button>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'rotating_quotes_v1';
+
+const defaults = [
+  { text: "The details are not the details. They make the design.", attr: "— Charles Eames" },
+  { text: "To design is to communicate clearly by whatever means you can control or master.", attr: "— Milton Glaser" },
+  { text: "Simplicity is not the absence of clutter, but the absence of anything unnecessary.", attr: "— Dieter Rams" }
+];
+
+let data = { quotes: [], interval: 8 };
+let current = 0;
+let timer = null;
+let currentTab = 'display';
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) data = JSON.parse(raw);
+    else data = { quotes: defaults.map(function(q){ return {text:q.text,attr:q.attr}; }), interval: 8 };
+  } catch(e) {
+    data = { quotes: defaults.map(function(q){ return {text:q.text,attr:q.attr}; }), interval: 8 };
+  }
+  render();
+}
+
+function save() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e) {}
+}
+
+function render() {
+  renderDisplay();
+  renderEditList();
+  document.getElementById('interval-slider').value = data.interval;
+  document.getElementById('interval-val').textContent = data.interval + 's';
+}
+
+function renderDisplay() {
+  var q = data.quotes;
+  if (!q.length) {
+    document.getElementById('qt').textContent = 'No quotes yet \u2014 add some in Edit quotes.';
+    document.getElementById('qa').textContent = '';
+    document.getElementById('dots').innerHTML = '';
+    return;
+  }
+  if (current >= q.length) current = 0;
+  document.getElementById('qt').textContent = '\u201C' + q[current].text + '\u201D';
+  document.getElementById('qa').textContent = q[current].attr || '';
+  document.getElementById('dots').innerHTML = q.map(function(_, i){
+    return '<div class="dot' + (i === current ? ' active' : '') + '"></div>';
+  }).join('');
+  resetTimer();
+}
+
+function renderEditList() {
+  var el = document.getElementById('quote-list');
+  if (!data.quotes.length) {
+    el.innerHTML = '<div class="empty-msg">No quotes yet.</div>';
+    return;
+  }
+  el.innerHTML = data.quotes.map(function(q, i) {
+    return '<div class="quote-item">' +
+      '<div class="quote-item-body">' +
+        '<div class="qi-text">\u201C' + esc(q.text) + '\u201D</div>' +
+        (q.attr ? '<div class="qi-attr">' + esc(q.attr) + '</div>' : '') +
+      '</div>' +
+      '<button class="remove-btn" onclick="removeQuote(' + i + ')" title="Remove">\xd7</button>' +
+    '</div>';
+  }).join('');
+}
+
+function esc(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function resetTimer() {
+  clearInterval(timer);
+  if (data.quotes.length > 1 && currentTab === 'display') {
+    timer = setInterval(function() {
+      current = (current + 1) % data.quotes.length;
+      renderDisplay();
+    }, data.interval * 1000);
+  }
+}
+
+function updateInterval(v) {
+  data.interval = parseInt(v);
+  document.getElementById('interval-val').textContent = v + 's';
+  save();
+  resetTimer();
+}
+
+function addQuote() {
+  var text = document.getElementById('new-quote').value.trim();
+  var attr = document.getElementById('new-attr').value.trim();
+  if (!text) return;
+  data.quotes.push({ text: text, attr: attr });
+  document.getElementById('new-quote').value = '';
+  document.getElementById('new-attr').value = '';
+  save();
+  render();
+}
+
+function removeQuote(i) {
+  data.quotes.splice(i, 1);
+  if (current >= data.quotes.length) current = Math.max(0, data.quotes.length - 1);
+  save();
+  render();
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('display-view').style.display = tab === 'display' ? '' : 'none';
+  document.getElementById('edit-view').style.display   = tab === 'edit'    ? '' : 'none';
+  var tabs = document.querySelectorAll('.tab');
+  tabs[0].classList.toggle('active', tab === 'display');
+  tabs[1].classList.toggle('active', tab === 'edit');
+  if (tab === 'display') resetTimer(); else clearInterval(timer);
+}
+
+load();
+</script>
+</body>
+</html>
